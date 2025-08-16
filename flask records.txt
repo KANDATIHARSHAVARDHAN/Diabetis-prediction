@@ -1,0 +1,38 @@
+from flask import Flask,render_template,request
+import joblib
+import pickle
+import numpy as np
+from tensorflow.keras.models import load_model
+
+le=joblib.load("dia_le")
+sc=pickle.load(open("dia_scaler.pkl",'rb'))
+model1=load_model("dia.h5")
+
+app=Flask(__name__)
+@app.route('/')
+def loadpage():
+    return render_template("index.html")
+
+@app.route('/y_predict',methods=["POST","GET"])
+def prediction():
+    gender=request.form["gender"]
+    age=request.form["age"]
+    hypertension=request.form["hypertension"]
+    heart_disease=request.form["heart_disease"]
+    smoking_history=request.form["smoking_history"]
+    bmi=request.form["bmi"]
+    HbA1c_level=request.form["HbA1c_level"]
+    blood_glucose_level=request.form["blood_glucose_level"]
+    x_test=[[gender,float(age),float(hypertension),float(heart_disease),float(smoking_history),float(bmi),float(HbA1c_level),float(blood_glucose_level)]]
+    print(x_test)
+    p=np.array(sc.transform(le.transform(x_test)))
+    prediction=model1.predict(p)
+    prediction=prediction>0.5
+    if(prediction==[[False]]):
+        text="negative"
+    else:
+        text="positive"
+    return render_template("index.html",prediction_text=text)
+if __name__=="__main__":
+    app.run(debug=True)
+    
